@@ -41,5 +41,5 @@ jobs:
           script: |
             cd ~/budget
             git pull origin main
-            # On relance uniquement ce qui a changé, en arrière-plan
+            export DOCKER_API_VERSION=1.41
             docker compose up -d --build
