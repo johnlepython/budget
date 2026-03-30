@@ -265,12 +265,12 @@
             <div class="chart-card" style="margin-bottom: 20px; padding: 15px; background: #f0f2f5;">
                 <h4 style="margin-bottom: 10px;">🆕 Nouvelle Catégorie</h4>
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="new-cat-name" placeholder="Nom (ex: Netflix)" style="flex: 2;">
-                    <select id="new-cat-type" style="flex: 1;">
+                    <input type="text" id="dash-new-cat-name" placeholder="Nom (ex: Netflix)" style="flex: 2;">
+                    <select id="dash-new-cat-type" style="flex: 1;">
                         <option value="Dépense">Dépense</option>
                         <option value="Revenu">Revenu</option>
                     </select>
-                    <button onclick="createCategory()" style="width: auto; padding: 10px;">➕</button>
+                    <button onclick="createCategory('dash-new-cat')" style="width: auto; padding: 10px;">➕</button>
                 </div>
             </div>
 
@@ -339,18 +339,17 @@
         </div>
 
 
-        <div id="view-settings" style="display: none;">
-    <h2>⚙️ Gestion des Catégories</h2>
-    <div class="chart-card" style="margin-top: 20px;">
-        <input type="text" id="new-cat-name" placeholder="Nom de la catégorie">
-        <select id="new-cat-type">
-            <option value="Dépense">Dépense</option>
-            <option value="Revenu">Revenu</option>
-        </select>
-        <button onclick="createCategory()" style="margin-top: 10px;">➕ Ajouter Catégorie</button>
+    <div id="view-settings" style="display: none;">
+        <h2>⚙️ Gestion des Catégories</h2>
+        <div class="chart-card" style="margin-top: 20px;">
+            <input type="text" id="new-cat-name" placeholder="Nom de la catégorie">
+            <select id="new-cat-type">
+                <option value="Dépense">Dépense</option>
+                <option value="Revenu">Revenu</option>
+            </select>
+            <button onclick="createCategory('new-cat')" style="margin-top: 10px;">➕ Ajouter Catégorie</button>
         </div>
         <ul id="settings-cat-list" style="margin-top: 20px;"></ul>
-    </div>
     </div>
 </body>
     
@@ -437,23 +436,30 @@
         });
     }
 
-    async function createCategory() {
-        const name = document.getElementById('new-cat-name').value;
-        const type = document.getElementById('new-cat-type').value;
+    async function createCategory(prefix = 'new-cat') {
+        const nameInput = document.getElementById(`${prefix}-name`);
+        const typeInput = document.getElementById(`${prefix}-type`);
+        
+        const name = nameInput.value;
+        const type = typeInput.value;
+
         if (!name) return alert("Nom requis");
+
         const authHeaders = getAuthHeaders();
         const response = await fetch(`${API_URL}/categories/`, {
             method: 'POST',
             headers: authHeaders,
             body: JSON.stringify({ name, type })
         });
+
         if (response.ok) {
-            document.getElementById('new-cat-name').value = '';
+            nameInput.value = ''; // On vide le bon input
             loadSettingsCategories();
+            // Optionnel : recharger la liste dans le formulaire de transaction
+            if (typeof loadCategories === 'function') loadCategories(); 
             showMessage("Catégorie créée !");
         }
     }
-
     async function deleteCategory(id) {
         if (!confirm("Supprimer cette catégorie ?")) return;
         const authHeaders = getAuthHeaders();
