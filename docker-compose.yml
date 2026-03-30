@@ -3,6 +3,7 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+      - "443:443" # Pour le HTTPS
     volumes:
       - ./backend:/app
       - ./data:/app/data  # Important : on cr  e un dossier pour la base de donn  es
