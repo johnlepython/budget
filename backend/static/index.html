@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Manager</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .transactions {
+            margin-top: 40px;
+        }
+        
+        .transactions h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .transaction-list {
+            list-style: none;
+        }
+        
+        .transaction-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s;
+        }
+        
+        .transaction-item:hover {
+            transform: translateX(5px);
+        }
+        
+        .transaction-item.revenue {
+            border-left-color: #28a745;
+        }
+        
+        .transaction-item.expense {
+            border-left-color: #dc3545;
+        }
+        
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .transaction-amount {
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+        
+        .transaction-amount.revenue {
+            color: #28a745;
+        }
+        
+        .transaction-amount.expense {
+            color: #dc3545;
+        }
+        
+        .transaction-category {
+            color: #666;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        
+        .transaction-description {
+            color: #777;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+        
+        .transaction-date {
+            color: #999;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+        
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .charts-container {
+            margin-top: 40px;
+        }
+        
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .chart-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .chart-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <div>
+                <h1 style="margin-bottom: 5px;">💰 Budget Manager</h1>
+                <p class="subtitle" style="margin: 0;">Gérez vos finances avec précision</p>
+            </div>
+            <button onclick="logout()" style="width: auto; padding: 10px 20px; font-size: 14px; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                🚪 Déconnexion
+            </button>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+            <button onclick="switchView('dashboard')" id="btn-dash" style="background: #667eea; width: auto; padding: 10px 20px;">🏠 Dashboard</button>
+            <button onclick="switchView('history')" id="btn-hist" style="background: #a0aec0; width: auto; padding: 10px 20px;">📅 Historique</button>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div id="view-dashboard">
+            <form id="transactionForm" class="chart-card" style="margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 12px;">
+                <div class="form-group">
+                    <label>Catégorie *</label>
+                    <select id="category_id" name="category_id" required></select>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Montant (₪) *</label>
+                    <input type="number" id="amount" name="amount" step="0.01" required>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Description</label>
+                    <textarea id="description" name="description" placeholder="Ex: Courses Monoprix"></textarea>
+                </div>
+                <button type="submit" style="margin-top: 20px;">💾 Enregistrer</button>
+            </form>
+            
+            <div class="chart-card" style="margin-bottom: 20px; padding: 15px; background: #f0f2f5;">
+                <h4 style="margin-bottom: 10px;">🆕 Nouvelle Catégorie</h4>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="new-cat-name" placeholder="Nom (ex: Netflix)" style="flex: 2;">
+                    <select id="new-cat-type" style="flex: 1;">
+                        <option value="Dépense">Dépense</option>
+                        <option value="Revenu">Revenu</option>
+                    </select>
+                    <button onclick="createCategory()" style="width: auto; padding: 10px;">➕</button>
+                </div>
+            </div>
+
+            <div class="charts-container">
+                <h2>🎯 Objectifs Mensuels</h2>
+                <div id="budgetStatus" class="charts-row" style="grid-template-columns: 1fr; gap: 15px; margin-top: 15px;">
+                    </div>
+            </div>
+            
+            <div class="charts-container" style="margin-top: 40px;">
+                <h2>📈 Statistiques</h2>
+                <div class="charts-row">
+                    <div class="chart-card">
+                        <h3>Répartition</h3>
+                        <div class="chart-wrapper"><canvas id="pieChart"></canvas></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Bilan</h3>
+                        <div class="chart-wrapper"><canvas id="barChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="transactions" style="margin-top: 40px;">
+                <h2>📊 Dernières Transactions</h2>
+                <ul id="transactionList" class="transaction-list">
+                    </ul>
+            </div>
+        </div>
+
+
+        <div id="view-history" style="display: none;">
+            <h2>📅 Récapitulatif par Mois</h2>
+            <button onclick="initCurrentMonth()" style="
+                width: auto; 
+                padding: 12px 20px; 
+                background-color: #28a745; 
+                color: white; 
+                border: none; 
+                border-radius: 8px; 
+                font-weight: bold; 
+                cursor: pointer; 
+                margin: 10px 0; 
+                display: flex; 
+                align-items: center; 
+                gap: 10px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <span>➕ Initialiser Mois</span>
+            </button>
+            <div class="charts-container" style="margin-top: 20px;">
+                <div id="historyTableContainer" class="chart-card" style="padding: 0; overflow: hidden;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead style="background: #f8f9fa; border-bottom: 2px solid #eee;">
+                            <tr>
+                                <th style="padding: 15px;">Mois</th>
+                                <th style="padding: 15px;">Revenus</th>
+                                <th style="padding: 15px;">Dépenses</th>
+                                <th style="padding: 15px;">Solde</th>
+                                <th style="padding: 15px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyListBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="view-settings" style="display: none;">
+    <h2>⚙️ Gestion des Catégories</h2>
+    <div class="chart-card" style="margin-top: 20px;">
+        <input type="text" id="new-cat-name" placeholder="Nom de la catégorie">
+        <select id="new-cat-type">
+            <option value="Dépense">Dépense</option>
+            <option value="Revenu">Revenu</option>
+        </select>
+        <button onclick="createCategory()" style="margin-top: 10px;">➕ Ajouter Catégorie</button>
+        </div>
+        <ul id="settings-cat-list" style="margin-top: 20px;"></ul>
+    </div>
+    </div>
+</body>
+    
+    <script>
+    const API_URL = 'http://localhost:8000';
+    let pieChart = null;
+    let barChart = null;
+
+    // --- HELPERS ---
+    function getAuthHeaders() {
+        const token = localStorage.getItem('access_token');
+        if (!token) { window.location.href = '/static/login.html'; return null; }
+        return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+    }
+
+    async function checkAuth() {
+        const token = localStorage.getItem('access_token');
+        if (!token) { window.location.href = '/static/login.html'; return false; }
+        try {
+            const response = await fetch(`${API_URL}/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!response.ok) { logout(); return false; }
+            return true;
+        } catch (error) { logout(); return false; }
+    }
+
+    function logout() {
+        localStorage.removeItem('access_token');
+        window.location.href = '/static/login.html';
+    }
+
+    function showMessage(text, type = 'success') {
+        const messageDiv = document.getElementById('message');
+        messageDiv.textContent = text;
+        messageDiv.className = `message ${type}`;
+        messageDiv.style.display = 'block';
+        setTimeout(() => { messageDiv.style.display = 'none'; }, 5000);
+    }
+
+    // --- NAVIGATION ---
+    function showHome() {
+        document.getElementById('view-history').style.display = 'block';
+        document.getElementById('view-dashboard').style.display = 'none';
+        document.getElementById('view-settings').style.display = 'none';
+        loadMonthlyHistory();
+    }
+
+    function showSettings() {
+        document.getElementById('view-history').style.display = 'none';
+        document.getElementById('view-dashboard').style.display = 'none';
+        document.getElementById('view-settings').style.display = 'block';
+        loadSettingsCategories();
+    }
+
+    function switchView(view) {
+        if (view === 'dashboard') showHome(); // Par défaut on revient à la liste
+        else if (view === 'history') showHome();
+    }
+
+    // --- LOGIQUE CATEGORIES ---
+    async function loadCategories() {
+        const authHeaders = getAuthHeaders();
+        const response = await fetch(`${API_URL}/categories/`, { headers: authHeaders });
+        const categories = await response.json();
+        const select = document.getElementById('category_id');
+        select.innerHTML = '<option value="">Sélectionnez une catégorie</option>';
+        categories.forEach(c => {
+            select.innerHTML += `<option value="${c.id}">${c.name} (${c.type})</option>`;
+        });
+    }
+
+    async function loadSettingsCategories() {
+        const authHeaders = getAuthHeaders();
+        const response = await fetch(`${API_URL}/categories/`, { headers: authHeaders });
+        const categories = await response.json();
+        const list = document.getElementById('settings-cat-list');
+        list.innerHTML = '';
+        categories.forEach(c => {
+            list.innerHTML += `
+                <li class="transaction-item" style="display:flex; justify-content:space-between; align-items:center; border-left-color: ${c.type === 'Revenu' ? '#28a745' : '#dc3545'}">
+                    <span><strong>${c.name}</strong> (${c.type})</span>
+                    <button onclick="deleteCategory(${c.id})" style="width:auto; padding:5px 10px; background:#ff4d4d; font-size:12px;">Supprimer</button>
+                </li>`;
+        });
+    }
+
+    async function createCategory() {
+        const name = document.getElementById('new-cat-name').value;
+        const type = document.getElementById('new-cat-type').value;
+        if (!name) return alert("Nom requis");
+        const authHeaders = getAuthHeaders();
+        const response = await fetch(`${API_URL}/categories/`, {
+            method: 'POST',
+            headers: authHeaders,
+            body: JSON.stringify({ name, type })
+        });
+        if (response.ok) {
+            document.getElementById('new-cat-name').value = '';
+            loadSettingsCategories();
+            showMessage("Catégorie créée !");
+        }
+    }
+
+    async function deleteCategory(id) {
+        if (!confirm("Supprimer cette catégorie ?")) return;
+        const authHeaders = getAuthHeaders();
+        await fetch(`${API_URL}/categories/${id}`, { method: 'DELETE', headers: authHeaders });
+        loadSettingsCategories();
+    }
+
+   
+
+    async function deleteTransaction(id) {
+        if (!confirm("Voulez-vous vraiment supprimer cette transaction ?")) return;
+        
+        const authHeaders = getAuthHeaders();
+        try {
+            const response = await fetch(`${API_URL}/transactions/${id}`, {
+                method: 'DELETE',
+                headers: authHeaders
+            });
+            
+            if (response.ok) {
+                showMessage('🗑️ Transaction supprimée');
+                
+                // On rafraîchit les données du mois actuel
+                await loadTransactions(window.currentMonth, window.currentYear);
+                await updateCharts(window.currentMonth, window.currentYear);
+                await loadBudgetStatus(window.currentMonth, window.currentYear);
+            } else {
+                const error = await response.json();
+                showMessage(`❌ Erreur: ${error.detail}`, 'error');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            showMessage('❌ Erreur de connexion au serveur', 'error');
+        }
+    }
+
+    async function updateCharts(month = null, year = null) {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders) return;
+
+        // On construit l'URL avec les paramètres month/year pour filtrer le backend
+        let url = `${API_URL}/stats/`;
+        if (month && year) {
+            url += `?month=${month}&year=${year}`;
+        }
+        
+        try {
+            const response = await fetch(url, { headers: authHeaders });
+            if (!response.ok) throw new Error("Erreur lors de la récupération des stats");
+            
+            const stats = await response.json();
+            
+            // Données pour le camembert (Dépenses par catégorie)
+            const expenseCategories = Object.keys(stats.expenses_by_category || {});
+            const expenseValues = Object.values(stats.expenses_by_category || {});
+            
+            // Couleurs modernes
+            const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+
+            // On détruit les anciens graphiques s'ils existent (évite les bugs de survol)
+            if (pieChart) pieChart.destroy();
+            if (barChart) barChart.destroy();
+
+            // 1. Graphique Camembert (Pie)
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            pieChart = new Chart(pieCtx, {
+                type: 'pie',
+                data: {
+                    labels: expenseCategories,
+                    datasets: [{
+                        data: expenseValues,
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // 2. Graphique Bâtons (Bar) - Revenus vs Dépenses
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            barChart = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Revenus', 'Dépenses'],
+                    datasets: [{
+                        label: 'Montant (₪)',
+                        data: [stats.total_income, stats.total_expense],
+                        backgroundColor: ['rgba(75, 192, 192, 0.8)', 'rgba(255, 99, 132, 0.8)'],
+                        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        } catch (error) {
+            console.error('Error updating charts:', error);
+        }
+    }
+
+    async function viewMonthDetail(monthLabel) {
+        const [year, month] = monthLabel.split('-');
+        const m = parseInt(month);
+        const y = parseInt(year);
+
+        // Stocker le mois actuel pour les futurs ajouts
+        window.currentMonth = m;
+        window.currentYear = y;
+
+        await loadCategories();
+        await loadTransactions(m, y);
+        await updateCharts(m, y);
+        await loadBudgetStatus(m, y);
+
+        document.getElementById('view-history').style.display = 'none';
+        document.getElementById('view-dashboard').style.display = 'block';
+        showMessage(`📂 Détails de ${monthLabel}`);
+    }
+
+    async function initCurrentMonth() {
+        const authHeaders = getAuthHeaders();
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+
+        try {
+            // 1. Récupérer les catégories existantes
+            const catRes = await fetch(`${API_URL}/categories/`, { headers: authHeaders });
+            let categories = await catRes.json();
+            let catId;
+
+            // 2. Si aucune catégorie n'existe, on en crée une par défaut
+            if (categories.length === 0) {
+                const newCatRes = await fetch(`${API_URL}/categories/`, {
+                    method: 'POST',
+                    headers: authHeaders,
+                    body: JSON.stringify({ name: "Général", type: "Dépense" })
+                });
+                const newCat = await newCatRes.json();
+                catId = newCat.id;
+            } else {
+                catId = categories[0].id; // On prend la première existante
+            }
+
+            // 3. Créer une transaction à 0 ₪ pour "ouvrir" le mois dans l'historique
+            const transRes = await fetch(`${API_URL}/transactions/`, {
+                method: 'POST',
+                headers: authHeaders,
+                body: JSON.stringify({
+                    category_id: catId,
+                    amount: 0,
+                    description: "Ouverture du mois",
+                    date: now.toISOString().split('T')[0] // Format YYYY-MM-DD
+                })
+            });
+
+            if (transRes.ok) {
+                showMessage("✅ Mois de " + month + "/" + year + " prêt !");
+                loadMonthlyHistory(); // Rafraîchit le tableau immédiatement
+            }
+        } catch (error) {
+            console.error("Erreur d'initialisation :", error);
+            showMessage("Erreur technique lors de l'ouverture du mois", "error");
+        }
+    }
+
+    async function loadMonthlyHistory() {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders) return;
+
+        try {
+            const response = await fetch(`${API_URL}/history/`, { headers: authHeaders });
+            if (!response.ok) throw new Error("Erreur lors de la récupération de l'historique");
+            
+            const history = await response.json();
+            const tbody = document.getElementById('historyListBody');
+            
+            if (!tbody) return; // Sécurité si l'élément n'existe pas
+            tbody.innerHTML = '';
+
+            if (history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding:20px; text-align:center; color:#999;">Aucune donnée trouvée. Commencez par ajouter une transaction !</td></tr>';
+                return;
+            }
+
+            history.forEach(item => {
+                const solde = item.income - item.expense;
+                tbody.innerHTML += `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 15px; font-weight: bold;">${item.month_label}</td>
+                        <td style="padding: 15px; color: #28a745;">+${item.income.toFixed(2)} ₪</td>
+                        <td style="padding: 15px; color: #dc3545;">-${item.expense.toFixed(2)} ₪</td>
+                        <td style="padding: 15px; font-weight: bold; color: ${solde >= 0 ? '#28a745' : '#dc3545'}">
+                            ${solde.toFixed(2)} ₪
+                        </td>
+                        <td style="padding: 15px;">
+                            <button onclick="viewMonthDetail('${item.month_label}')" style="width: auto; padding: 8px 15px; font-size: 13px; background: #667eea; border-radius:6px; border:none; color:white; cursor:pointer;">
+                                🔍 Détails
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        } catch (error) {
+            console.error('Erreur history:', error);
+            showMessage("Impossible de charger l'historique", "error");
+        }
+    }
+
+    async function loadTransactions(month, year) {
+        const authHeaders = getAuthHeaders();
+        const response = await fetch(`${API_URL}/transactions/?month=${month}&year=${year}`, { headers: authHeaders });
+        const transactions = await response.json();
+        const list = document.getElementById('transactionList');
+        list.innerHTML = transactions.length === 0 ? '<li class="empty-state">Aucune transaction</li>' : '';
+        
+        // On recharge les catégories pour avoir les noms
+        const catRes = await fetch(`${API_URL}/categories/`, { headers: authHeaders });
+        const categories = await catRes.json();
+
+        transactions.forEach(t => {
+            const cat = categories.find(c => c.id === t.category_id);
+            const isRev = cat && cat.type === 'Revenu';
+            list.innerHTML += `
+                <li class="transaction-item ${isRev ? 'revenue' : 'expense'}">
+                    <div class="transaction-header">
+                        <span class="transaction-category">${cat ? cat.name : 'N/A'}</span>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <span class="transaction-amount ${isRev ? 'revenue' : 'expense'}">${Math.abs(t.amount).toFixed(2)} ₪</span>
+                            <button onclick="deleteTransaction(${t.id})" style="width:auto; padding:5px; background:none; color:red; border:none; cursor:pointer;">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="transaction-description">${t.description || ''}</div>
+                </li>`;
+        });
+    }
+
+    async function loadBudgetStatus(month, year) {
+        const authHeaders = getAuthHeaders();
+        
+        // ⚠️ Si month ou year sont absents, on prend la date du jour par sécurité
+        const m = month || window.currentMonth || (new Date().getMonth() + 1);
+        const y = year || window.currentYear || new Date().getFullYear();
+
+        // On construit l'URL avec les "Query Parameters"
+        const url = `${API_URL}/budget-status/?month=${m}&year=${y}`;
+        
+        try {
+            const response = await fetch(url, { headers: authHeaders });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Erreur Backend:", errorData);
+                return;
+            }
+
+            const budgets = await response.json();
+            const container = document.getElementById('budgetStatus');
+            if (!container) return;
+            
+            container.innerHTML = '';
+
+            if (budgets.length === 0) {
+                container.innerHTML = '<p style="color: #999;">Aucune catégorie de dépense créée.</p>';
+                return;
+            }
+
+            budgets.forEach(b => {
+                const color = b.percent > 90 ? '#dc3545' : (b.percent > 70 ? '#ffc107' : '#28a745');
+                container.innerHTML += `
+                    <div class="chart-card" style="padding: 15px; margin-bottom: 10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="font-weight:bold;">${b.category}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size:0.9em;">${b.spent.toFixed(0)} / ${b.limit} ₪</span>
+                                <button onclick="editLimit(${b.category_id}, ${b.limit}, '${b.category}', ${m}, ${y})" style="width:auto; padding:2px 6px; background:none; border:1px solid #ccc; cursor:pointer;">⚙️</button>
+                                <button onclick="deleteCategory(${b.category_id})" style="width:auto; padding:2px 6px; background:none; border:1px solid #ff4d4d; color:#ff4d4d; cursor:pointer;">🗑️</button>
+                            </div>
+                        </div>
+                        <div style="width:100%; height:8px; background:#eee; border-radius:4px; overflow:hidden;">
+                            <div style="width:${b.percent}%; height:100%; background:${color}; transition:width 0.5s;"></div>
+                        </div>
+                    </div>`;
+            });
+        } catch (error) {
+            console.error("Erreur Fetch Budget:", error);
+        }
+    }
+
+    async function editLimit(catId, currentLimit, catName, month, year) {
+        const newLimit = prompt(`Limite pour ${catName} en ${month}/${year} :`, currentLimit);
+        if (newLimit === null || isNaN(newLimit)) return;
+        const authHeaders = getAuthHeaders();
+        await fetch(`${API_URL}/set-monthly-budget/?cat_id=${catId}&limit=${newLimit}&month=${month}&year=${year}`, {
+            method: 'POST',
+            headers: authHeaders
+        });
+        loadBudgetStatus(month, year);
+    }
+
+    // --- INITIALISATION ---
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (await checkAuth()) {
+            showHome();
+        }
+    });
+
+    // Listener Formulaire (Correction date)
+    document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        // On utilise le mois/année sélectionné lors du clic sur "Détails"
+        const data = {
+            category_id: parseInt(formData.get('category_id')),
+            amount: parseFloat(formData.get('amount')),
+            description: formData.get('description') || "",
+            date: new Date(window.currentYear, window.currentMonth - 1, 2).toISOString()
+        };
+        
+        const response = await fetch(`${API_URL}/transactions/`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            showMessage("✅ Enregistré");
+            e.target.reset();
+            viewMonthDetail(`${window.currentYear}-${window.currentMonth.toString().padStart(2, '0')}`);
+        }
+    });
+    </script>
+</body>
+</html>

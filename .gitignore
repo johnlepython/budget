@@ -1,5 +1,17 @@
-.env
 node_modules/
-__pycache__/
 .DS_Store
 logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Base de données (NE PAS POUSSER)
+*.db
+*.sqlite3
+
+# Docker logs
+*.log
