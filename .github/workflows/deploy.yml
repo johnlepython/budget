@@ -21,7 +21,7 @@ jobs:
         run: |
           ls -R # Cette ligne va nous afficher TOUS tes fichiers dans la console GitHub
           export PYTHONPATH=$PYTHONPATH:.
-          pytest tests/test_main.py
+          pytest backend/tests/test_main.py
 
   deploy:
     needs: test
