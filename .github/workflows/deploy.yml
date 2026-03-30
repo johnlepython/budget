@@ -18,7 +18,9 @@ jobs:
           pip install -r backend/requirements.txt
           pip install pytest pytest-asyncio httpx
       - name: Run tests
-        run: pytest backend/tests
+        ls -R # Cette ligne va nous afficher TOUS tes fichiers dans la console GitHub
+        export PYTHONPATH=$PYTHONPATH:.
+        pytest tests/test_main.py
 
   deploy:
     needs: test
