@@ -19,7 +19,7 @@ jobs:
           pip install pytest pytest-asyncio httpx
       - name: Run tests
         run: |
-          cd backend
+          ls -R # Cette ligne va nous afficher TOUS tes fichiers dans la console GitHub
           export PYTHONPATH=$PYTHONPATH:.
           pytest tests/test_main.py
 
