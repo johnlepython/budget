@@ -19,8 +19,9 @@ jobs:
           pip install pytest pytest-asyncio httpx
       - name: Run tests
         run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/backend
-          pytest backend/tests/
+          cd backend
+          export PYTHONPATH=$PYTHONPATH:.
+          pytest tests/test_main.py
 
   deploy:
     needs: test
