@@ -19,10 +19,8 @@ jobs:
           pip install pytest pytest-asyncio httpx
       - name: Run tests
         run: |
-        # On ajoute le dossier backend au chemin de recherche de Python
-        export PYTHONPATH=$PYTHONPATH:$(pwd)/backend
-        # On lance pytest en pointant DIRECTEMENT le dossier
-        pytest backend/tests/
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/backend
+          pytest backend/tests/
 
   deploy:
     needs: test
