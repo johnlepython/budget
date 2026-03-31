@@ -48,3 +48,11 @@ class Budget(BudgetBase, table=True):
 
 class BudgetRead(BudgetBase): 
     id: int
+
+class Budget(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    category_id: int = Field(foreign_key="category.id")
+    user_id: int = Field(foreign_key="user.id")
+    monthly_limit: float
+    month: int
+    year: int
