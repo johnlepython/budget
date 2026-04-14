@@ -129,6 +129,9 @@ def get_history(session = Depends(get_session), current_user = Depends(get_curre
     try:
         statement = select(Transaction).where(Transaction.user_id == current_user.id)
         transactions = session.exec(statement).all()
+
+        # Charger toutes les catégories pour pouvoir distinguer Revenu / Dépense
+        categories = {c.id: c for c in session.exec(select(Category)).all()}
         
         history_map = {}
         for t in transactions:
@@ -140,9 +143,12 @@ def get_history(session = Depends(get_session), current_user = Depends(get_curre
             
             if month_key not in history_map:
                 history_map[month_key] = {"income": 0, "expense": 0}
-                
-            if t.amount > 0:
-                history_map[month_key]["income"] += t.amount
+
+            # Correction : on se base sur le TYPE de la catégorie (et non le signe du montant)
+            # car les montants sont toujours stockés en valeur positive
+            cat = categories.get(t.category_id)
+            if cat and cat.type == "Revenu":
+                history_map[month_key]["income"] += abs(t.amount)
             else:
                 history_map[month_key]["expense"] += abs(t.amount)
                 
